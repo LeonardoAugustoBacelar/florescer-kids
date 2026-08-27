@@ -21,6 +21,8 @@ import WhatsAppInlineButton from "@/components/WhatsAppInlineButton";
 import TeacherCard from "@/components/TeacherCard";
 import RatingStars from "@/components/RatingStars";
 import SectionMark from "@/components/SectionMark";
+import JsonLd from "@/components/JsonLd";
+import { buildOrganizationSchema } from "@/lib/structuredData";
 
 const STOCK_PHOTOS = {
   hug: "https://images.unsplash.com/photo-1752652011858-302f08a6dc9f?auto=format&fit=crop&w=1200&q=80",
@@ -176,7 +178,10 @@ const BORDER_TOP = {
 export default async function HomePage() {
   const teachers = await prisma.teacherProfile.findMany({
     where: { approved: true },
-    include: { user: true, reviews: true },
+    include: {
+      user: true,
+      reviews: { include: { mae: { select: { name: true } } } },
+    },
     take: 3,
     orderBy: { createdAt: "desc" },
   });
@@ -193,6 +198,9 @@ export default async function HomePage() {
 
   return (
     <div>
+      <JsonLd
+        data={buildOrganizationSchema(teachers[0], teachers[0]?.reviews ?? [])}
+      />
       {/* Hero */}
       <section className="border-b border-primary-100 bg-white">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:py-24">

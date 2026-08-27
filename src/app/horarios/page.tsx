@@ -12,6 +12,8 @@ import {
 } from "@/lib/date";
 import PixPaymentInfo from "@/components/PixPaymentInfo";
 import SectionMark from "@/components/SectionMark";
+import JsonLd from "@/components/JsonLd";
+import { buildFaqSchema } from "@/lib/structuredData";
 
 export const metadata: Metadata = {
   title: "Horários disponíveis",
@@ -84,6 +86,7 @@ export default async function HorariosPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <JsonLd data={buildFaqSchema(FAQ_ITEMS)} />
       <h1 className="font-serif-display text-3xl font-semibold text-primary-700">
         Horários disponíveis
       </h1>

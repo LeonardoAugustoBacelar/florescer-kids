@@ -14,6 +14,8 @@ import SpecialtyTags from "@/components/SpecialtyTags";
 import PixPaymentInfo from "@/components/PixPaymentInfo";
 import { summarizeRatings } from "@/lib/reviews";
 import { startOfToday, toDateKey } from "@/lib/date";
+import JsonLd from "@/components/JsonLd";
+import { buildTeacherPageSchema } from "@/lib/structuredData";
 
 const getTeacher = cache(async (id: string) => {
   return prisma.teacherProfile.findUnique({
@@ -90,6 +92,7 @@ export default async function TeacherProfilePage({
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <JsonLd data={buildTeacherPageSchema(teacher, teacher.reviews)} />
       <div className="grid gap-10 md:grid-cols-[2fr_1fr]">
         <div>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">

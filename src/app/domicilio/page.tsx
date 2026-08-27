@@ -21,6 +21,8 @@ import {
 import DomicilioBookingForm from "@/components/forms/DomicilioBookingForm";
 import PixPaymentInfo from "@/components/PixPaymentInfo";
 import SectionMark from "@/components/SectionMark";
+import JsonLd from "@/components/JsonLd";
+import { buildFaqSchema } from "@/lib/structuredData";
 
 export const metadata: Metadata = {
   title: "Atendimento a domicílio em Cotia-SP",
@@ -152,6 +154,7 @@ export default async function DomicilioPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <JsonLd data={buildFaqSchema(FAQ_ITEMS)} />
       <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-accent-600">
         <MapPin className="h-3.5 w-3.5" />
         Atende apenas Cotia-SP e região
