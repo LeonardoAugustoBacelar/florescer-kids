@@ -31,6 +31,9 @@ export default async function Header() {
           <Link href="/domicilio" className="nav-link transition-colors hover:text-primary-700">
             A domicílio
           </Link>
+          <Link href="/blog" className="nav-link transition-colors hover:text-primary-700">
+            Artigos
+          </Link>
           <Link href="/#depoimentos" className="nav-link transition-colors hover:text-primary-700">
             Como trabalhamos
           </Link>

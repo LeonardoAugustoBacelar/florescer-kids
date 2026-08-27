@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/professoras", label: "Professora" },
   { href: "/horarios", label: "Horários" },
   { href: "/domicilio", label: "A domicílio" },
+  { href: "/blog", label: "Artigos" },
   { href: "/#depoimentos", label: "Como trabalhamos" },
   { href: "/#contato", label: "Contato" },
 ];

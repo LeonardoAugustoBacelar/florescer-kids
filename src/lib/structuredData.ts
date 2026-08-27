@@ -176,6 +176,36 @@ export function buildTeacherPageSchema(
   };
 }
 
+export type PostForSchema = {
+  slug: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  updatedAt?: string;
+  tags: string[];
+};
+
+/** Artigo do blog, atribuído à professora que assina o conteúdo. */
+export function buildArticleSchema(post: PostForSchema): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.description,
+    inLanguage: "pt-BR",
+    datePublished: post.publishedAt,
+    dateModified: post.updatedAt ?? post.publishedAt,
+    mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
+    author: {
+      "@type": "Person",
+      name: "Gilda Bacelar",
+      jobTitle: "Pedagoga e psicopedagoga",
+    },
+    publisher: { "@id": ORGANIZATION_ID },
+    ...(post.tags.length > 0 ? { keywords: post.tags.join(", ") } : {}),
+  };
+}
+
 /** Perguntas frequentes — as que já estão escritas nas páginas. */
 export function buildFaqSchema(
   items: readonly { question: string; answer: string }[]

@@ -110,7 +110,10 @@ describe("buildFaqSchema", () => {
   it("converte as perguntas da página no formato FAQPage", () => {
     const schema = buildFaqSchema([
       { question: "Como funciona o pagamento?", answer: "Por PIX." },
-    ]) as { mainEntity: { name: string; acceptedAnswer: { text: string } }[] };
+    ]) as {
+      "@type": string;
+      mainEntity: { name: string; acceptedAnswer: { text: string } }[];
+    };
     expect(schema["@type"]).toBe("FAQPage");
     expect(schema.mainEntity[0].name).toBe("Como funciona o pagamento?");
     expect(schema.mainEntity[0].acceptedAnswer.text).toBe("Por PIX.");
