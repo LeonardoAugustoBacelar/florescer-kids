@@ -11,6 +11,13 @@ import {
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DOMICILIO_SCHEDULE_RULES, getDaySlots, isWeekend } from "@/lib/schedule";
+import {
+  addDays,
+  formatDateBR,
+  getWeekday,
+  startOfToday,
+  toDateKey,
+} from "@/lib/date";
 import DomicilioBookingForm from "@/components/forms/DomicilioBookingForm";
 import PixPaymentInfo from "@/components/PixPaymentInfo";
 import SectionMark from "@/components/SectionMark";
@@ -93,9 +100,8 @@ export default async function DomicilioPage() {
     );
   }
 
-  const today = new Date(new Date().toDateString());
-  const rangeEnd = new Date(today);
-  rangeEnd.setDate(rangeEnd.getDate() + DAYS_TO_SHOW);
+  const today = startOfToday();
+  const rangeEnd = addDays(today, DAYS_TO_SHOW);
 
   const [bookings, blockedDates] = await Promise.all([
     prisma.booking.findMany({
@@ -115,18 +121,17 @@ export default async function DomicilioPage() {
 
   const bookedByDate = new Map<string, Set<string>>();
   for (const booking of bookings) {
-    const key = booking.date.toISOString().slice(0, 10);
+    const key = toDateKey(booking.date);
     if (!bookedByDate.has(key)) bookedByDate.set(key, new Set());
     bookedByDate.get(key)!.add(booking.startTime);
   }
   const blockedDateKeys = new Set(
-    blockedDates.map((b) => b.date.toISOString().slice(0, 10))
+    blockedDates.map((b) => toDateKey(b.date))
   );
 
   const days = Array.from({ length: DAYS_TO_SHOW }, (_, i) => {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-    const key = date.toISOString().slice(0, 10);
+    const date = addDays(today, i);
+    const key = toDateKey(date);
     const takenTimes = bookedByDate.get(key) ?? new Set<string>();
     const slots = getDaySlots(date, DOMICILIO_SCHEDULE_RULES).map((slot) => ({
       ...slot,
@@ -138,7 +143,7 @@ export default async function DomicilioPage() {
   });
 
   const bookedSlotsForForm = bookings.map((b) => ({
-    date: b.date.toISOString().slice(0, 10),
+    date: toDateKey(b.date),
     startTime: b.startTime,
   }));
   const blockedDatesForForm = Array.from(blockedDateKeys);
@@ -229,16 +234,16 @@ export default async function DomicilioPage() {
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             {days.map(({ date, slots, dayIsFull, isBlocked }, index) => (
               <div
-                key={date.toISOString()}
+                key={toDateKey(date)}
                 data-reveal
                 style={{ "--reveal-delay": `${(index % 6) * 60}ms` } as CSSProperties}
                 className="rounded-lg border border-primary-100 bg-white p-4"
               >
                 <p className="text-sm font-bold text-primary-700">
-                  {WEEKDAY_LABELS[date.getDay()]}
+                  {WEEKDAY_LABELS[getWeekday(date)]}
                   <span className="font-normal text-primary-700/60">
                     {" "}
-                    · {date.toLocaleDateString("pt-BR")}
+                    · {formatDateBR(date)}
                   </span>
                   {isWeekend(date) && (
                     <span className="ml-2 rounded-full bg-sun-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sun-600">

@@ -7,6 +7,7 @@ import {
   removeBlockedDateAction,
   type BlockedDateState,
 } from "@/lib/actions/blockedDates";
+import { formatDateBR } from "@/lib/date";
 
 const initialState: BlockedDateState = {};
 
@@ -74,7 +75,7 @@ export default function BlockedDatesManager({
               className="flex items-center justify-between gap-3 rounded-md border border-primary-100 bg-white px-3 py-2 text-sm"
             >
               <span className="text-primary-700">
-                {b.date.toLocaleDateString("pt-BR")}
+                {formatDateBR(b.date)}
                 {b.reason && (
                   <span className="text-primary-700/60"> — {b.reason}</span>
                 )}

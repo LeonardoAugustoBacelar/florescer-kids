@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { createBookingAction, type BookingState } from "@/lib/actions/booking";
 import { getDaySlots, SCHEDULE_RULES } from "@/lib/schedule";
+import { formatDateBR, parseDateOnly } from "@/lib/date";
 import WhatsAppInlineButton from "@/components/WhatsAppInlineButton";
 
 const initialState: BookingState = {};
@@ -48,7 +49,7 @@ export default function BookingForm({
   const slotsForDay = useMemo(
     () =>
       date
-        ? getDaySlots(new Date(`${date}T00:00:00`)).map((slot) => ({
+        ? getDaySlots(parseDateOnly(date)).map((slot) => ({
             ...slot,
             taken: takenTimesForDate.has(slot.startTime),
           }))
@@ -60,9 +61,7 @@ export default function BookingForm({
     dayIsFull || dayIsBlocked ? [] : slotsForDay.filter((s) => !s.taken);
 
   if (state.success) {
-    const dateLabel = date
-      ? new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR")
-      : "";
+    const dateLabel = date ? formatDateBR(parseDateOnly(date)) : "";
     const receiptMessage = `Olá! Acabei de agendar uma aula${
       childName ? ` para ${childName}` : ""
     }${dateLabel ? ` no dia ${dateLabel}` : ""}${

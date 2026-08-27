@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatDateBR, parseDateOnly } from "@/lib/date";
 import { Prisma } from "@/generated/prisma/client";
 import {
   DOMICILIO_SCHEDULE_RULES,
@@ -21,7 +22,7 @@ const bookingSchema = z
   .object({
     teacherId: z.string().min(1),
     childName: z.string().min(2, "Informe o nome da criança"),
-    date: z.string().min(1, "Escolha uma data"),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha uma data"),
     startTime: z.string().min(1, "Escolha um horário"),
     endTime: z.string().min(1),
     notes: z.string().optional(),
@@ -65,7 +66,7 @@ export async function createBookingAction(
   }
 
   const data = parsed.data;
-  const bookingDate = new Date(data.date);
+  const bookingDate = parseDateOnly(data.date);
   const isDomicilio = data.modality !== "ONLINE";
   const rules = isDomicilio ? DOMICILIO_SCHEDULE_RULES : SCHEDULE_RULES;
   const sameModalityGroup = isDomicilio
@@ -136,7 +137,7 @@ export async function createBookingAction(
       await sendNewBookingNotificationEmail(notifyEmail, {
         maeName: created.mae.name,
         childName: created.childName,
-        date: bookingDate.toLocaleDateString("pt-BR"),
+        date: formatDateBR(bookingDate),
         startTime: created.startTime,
         endTime: created.endTime,
         modality: created.modality,

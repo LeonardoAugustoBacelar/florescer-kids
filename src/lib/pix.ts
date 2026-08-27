@@ -9,8 +9,10 @@ export const PIX_CONFIG = {
   name: "Gilda Bacelar",
   // Campo "cidade" do BR Code exige texto em ASCII, sem acentuação.
   city: "Sao Paulo",
-  // Valor fixo de uma aula. O QR sempre pede esse valor ao ser escaneado
-  // (o app do banco ainda deixa a pessoa editar antes de confirmar).
+  // Valor de reserva, usado só quando não há preço de professora em tela.
+  // O valor real vem sempre do perfil (`pricePerHour` /
+  // `pricePerHourDomicilio`) e é passado pra `PixPaymentInfo` — senão o QR
+  // cobraria um valor diferente do anunciado quando a professora muda o preço.
   amount: 60,
 } as const;
 

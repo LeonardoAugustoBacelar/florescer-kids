@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatDateBR } from "@/lib/date";
 import BookingActions from "@/components/dashboard/BookingActions";
 import CancelBookingButton from "@/components/dashboard/CancelBookingButton";
 import TeacherNoteForm from "@/components/dashboard/TeacherNoteForm";
@@ -127,7 +128,7 @@ async function MaeDashboard({ userId }: { userId: string }) {
                     Criança: {booking.childName}
                   </p>
                   <p className="text-sm text-primary-700/70">
-                    {new Date(booking.date).toLocaleDateString("pt-BR")} ·{" "}
+                    {formatDateBR(booking.date)} ·{" "}
                     {booking.startTime} às {booking.endTime}
                   </p>
                   {booking.modality !== "ONLINE" && (
@@ -187,9 +188,9 @@ async function MaeDashboard({ userId }: { userId: string }) {
                 )}
                 <WhatsAppInlineButton
                   phone={booking.teacher.whatsapp}
-                  message={`Olá, ${booking.teacher.user.name}! Sobre a aula do dia ${new Date(
+                  message={`Olá, ${booking.teacher.user.name}! Sobre a aula do dia ${formatDateBR(
                     booking.date
-                  ).toLocaleDateString("pt-BR")} às ${booking.startTime}...`}
+                  )} às ${booking.startTime}...`}
                   label="Falar com a professora"
                   className="!px-4 !py-2 text-xs"
                 />
@@ -197,9 +198,9 @@ async function MaeDashboard({ userId }: { userId: string }) {
                   booking.status === "CONFIRMADA") && (
                   <WhatsAppInlineButton
                     phone={booking.teacher.whatsapp}
-                    message={`Olá, ${booking.teacher.user.name}! Segue o comprovante do PIX da aula do dia ${new Date(
+                    message={`Olá, ${booking.teacher.user.name}! Segue o comprovante do PIX da aula do dia ${formatDateBR(
                       booking.date
-                    ).toLocaleDateString("pt-BR")} às ${booking.startTime}:`}
+                    )} às ${booking.startTime}:`}
                     label="Enviar comprovante PIX"
                     className="!bg-accent-500 !px-4 !py-2 text-xs hover:!bg-accent-600"
                   />
@@ -472,7 +473,7 @@ function TeacherBookingCard({
             Criança: {booking.childName}
           </p>
           <p className="text-sm text-primary-700/70">
-            {new Date(booking.date).toLocaleDateString("pt-BR")} ·{" "}
+            {formatDateBR(booking.date)} ·{" "}
             {booking.startTime} às {booking.endTime}
           </p>
           {booking.modality !== "ONLINE" && (

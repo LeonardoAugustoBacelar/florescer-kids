@@ -6,15 +6,16 @@ import {
   isValidSlot,
   isWeekend,
 } from "./schedule";
+import { parseDateOnly } from "./date";
 
 // 2026-08-04 é uma terça-feira (confirmado no projeto) — usado como âncora
-// pros outros dias da semana abaixo. Construído com o construtor local
-// (ano, mês 0-indexado, dia) pra não depender do fuso horário de quem roda
-// o teste, diferente de `new Date("2026-08-08")` (UTC).
-const TUESDAY = new Date(2026, 7, 4);
-const WEDNESDAY = new Date(2026, 7, 5);
-const SATURDAY = new Date(2026, 7, 8);
-const SUNDAY = new Date(2026, 7, 9);
+// pros outros dias da semana abaixo. Construído com `parseDateOnly` (meia-noite
+// UTC), que é como as datas de aula existem no resto do sistema — e por isso o
+// resultado não muda com o fuso de quem roda o teste.
+const TUESDAY = parseDateOnly("2026-08-04");
+const WEDNESDAY = parseDateOnly("2026-08-05");
+const SATURDAY = parseDateOnly("2026-08-08");
+const SUNDAY = parseDateOnly("2026-08-09");
 
 describe("isWeekend", () => {
   it("considera sábado e domingo como fim de semana", () => {

@@ -13,6 +13,7 @@ import RatingStars from "@/components/RatingStars";
 import SpecialtyTags from "@/components/SpecialtyTags";
 import PixPaymentInfo from "@/components/PixPaymentInfo";
 import { summarizeRatings } from "@/lib/reviews";
+import { startOfToday, toDateKey } from "@/lib/date";
 
 const getTeacher = cache(async (id: string) => {
   return prisma.teacherProfile.findUnique({
@@ -65,25 +66,23 @@ export default async function TeacherProfilePage({
     where: {
       teacherId: teacher.id,
       status: { in: ["PENDENTE", "CONFIRMADA"] },
-      date: { gte: new Date(new Date().toDateString()) },
+      date: { gte: startOfToday() },
     },
     select: { date: true, startTime: true },
   });
   const bookedSlots = upcomingBookings.map((b) => ({
-    date: b.date.toISOString().slice(0, 10),
+    date: toDateKey(b.date),
     startTime: b.startTime,
   }));
 
   const upcomingBlockedDates = await prisma.blockedDate.findMany({
     where: {
       teacherId: teacher.id,
-      date: { gte: new Date(new Date().toDateString()) },
+      date: { gte: startOfToday() },
     },
     select: { date: true },
   });
-  const blockedDates = upcomingBlockedDates.map((b) =>
-    b.date.toISOString().slice(0, 10)
-  );
+  const blockedDates = upcomingBlockedDates.map((b) => toDateKey(b.date));
 
   const ratingSummary = summarizeRatings(teacher.reviews);
 
@@ -230,7 +229,7 @@ export default async function TeacherProfilePage({
             )}
           </div>
 
-          <PixPaymentInfo />
+          <PixPaymentInfo amount={teacher.pricePerHour} />
         </div>
       </div>
     </div>

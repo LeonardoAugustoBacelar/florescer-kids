@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { parseDateOnly } from "@/lib/date";
 
 export type BlockedDateState = {
   error?: string;
@@ -11,7 +12,7 @@ export type BlockedDateState = {
 };
 
 const blockSchema = z.object({
-  date: z.string().min(1, "Escolha uma data"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Escolha uma data"),
   reason: z.string().trim().optional(),
 });
 
@@ -41,7 +42,7 @@ export async function addBlockedDateAction(
     return { error: "Não autorizado" };
   }
 
-  const date = new Date(`${parsed.data.date}T00:00:00`);
+  const date = parseDateOnly(parsed.data.date);
 
   const existing = await prisma.blockedDate.findUnique({
     where: { teacherId_date: { teacherId: teacherProfile.id, date } },

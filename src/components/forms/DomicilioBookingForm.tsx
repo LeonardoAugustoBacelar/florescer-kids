@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { createBookingAction, type BookingState } from "@/lib/actions/booking";
 import { DOMICILIO_SCHEDULE_RULES, getDaySlots } from "@/lib/schedule";
+import { formatDateBR, parseDateOnly } from "@/lib/date";
 import WhatsAppInlineButton from "@/components/WhatsAppInlineButton";
 
 const initialState: BookingState = {};
@@ -55,10 +56,7 @@ export default function DomicilioBookingForm({
   const slotsForDay = useMemo(
     () =>
       date
-        ? getDaySlots(
-            new Date(`${date}T00:00:00`),
-            DOMICILIO_SCHEDULE_RULES
-          ).map((slot) => ({
+        ? getDaySlots(parseDateOnly(date), DOMICILIO_SCHEDULE_RULES).map((slot) => ({
             ...slot,
             taken: takenTimesForDate.has(slot.startTime),
           }))
@@ -70,9 +68,7 @@ export default function DomicilioBookingForm({
     dayIsFull || dayIsBlocked ? [] : slotsForDay.filter((s) => !s.taken);
 
   if (state.success) {
-    const dateLabel = date
-      ? new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR")
-      : "";
+    const dateLabel = date ? formatDateBR(parseDateOnly(date)) : "";
     const receiptMessage = `Olá! Acabei de agendar um atendimento a domicílio${
       childName ? ` para ${childName}` : ""
     }${dateLabel ? ` no dia ${dateLabel}` : ""}${

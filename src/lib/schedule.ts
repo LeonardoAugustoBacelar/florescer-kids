@@ -2,6 +2,8 @@
 // 17h em dias de semana e às 14h em finais de semana, até as 20h, com no
 // máximo 3 aulas por dia (capacidade da professora).
 
+import { getWeekday } from "@/lib/date";
+
 export const SCHEDULE_RULES = {
   weekdayStart: "17:00",
   weekendStart: "14:00",
@@ -41,7 +43,7 @@ function minutesToTime(minutes: number): string {
 }
 
 export function isWeekend(date: Date): boolean {
-  const day = date.getDay();
+  const day = getWeekday(date);
   return day === 0 || day === 6;
 }
 

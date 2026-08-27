@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { addDays, formatDateBR, startOfToday } from "@/lib/date";
 import { sendBookingReminderEmail } from "@/lib/email";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 
@@ -9,12 +10,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const tomorrowStart = new Date();
-  tomorrowStart.setDate(tomorrowStart.getDate() + 1);
-  tomorrowStart.setHours(0, 0, 0, 0);
-
-  const tomorrowEnd = new Date(tomorrowStart);
-  tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+  const tomorrowStart = addDays(startOfToday(), 1);
+  const tomorrowEnd = addDays(tomorrowStart, 1);
 
   const bookings = await prisma.booking.findMany({
     where: {
@@ -34,7 +31,7 @@ export async function GET(request: NextRequest) {
     await sendBookingReminderEmail(booking.mae.email, {
       childName: booking.childName,
       teacherName: booking.teacher.user.name,
-      date: booking.date.toLocaleDateString("pt-BR"),
+      date: formatDateBR(booking.date),
       startTime: booking.startTime,
       whatsappUrl,
       videoCallLink: booking.teacher.videoCallLink,

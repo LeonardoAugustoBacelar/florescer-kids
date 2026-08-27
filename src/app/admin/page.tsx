@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { formatDateBR } from "@/lib/date";
 import TeacherApprovalToggle from "@/components/dashboard/TeacherApprovalToggle";
 import DenyTeacherButton from "@/components/dashboard/DenyTeacherButton";
 import DeleteBookingButton from "@/components/dashboard/DeleteBookingButton";
@@ -106,7 +107,7 @@ export default async function AdminPage() {
                     </span>
                   </p>
                   <p className="text-sm text-primary-700/70">
-                    {new Date(booking.date).toLocaleDateString("pt-BR")} ·{" "}
+                    {formatDateBR(booking.date)} ·{" "}
                     {booking.startTime} às {booking.endTime}
                   </p>
                 </div>

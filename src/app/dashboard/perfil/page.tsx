@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { ArrowLeft } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { startOfToday } from "@/lib/date";
 import TeacherProfileForm from "@/components/dashboard/TeacherProfileForm";
 import BlockedDatesManager from "@/components/dashboard/BlockedDatesManager";
 
@@ -25,7 +26,7 @@ export default async function EditarPerfilPage() {
     where: { userId: session.user.id },
     include: {
       blockedDates: {
-        where: { date: { gte: new Date(new Date().toDateString()) } },
+        where: { date: { gte: startOfToday() } },
         orderBy: { date: "asc" },
       },
     },
