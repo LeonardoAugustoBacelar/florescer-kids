@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomBytes } from "crypto";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -35,8 +36,19 @@ Cada aula é adaptada à realidade da família, sempre com orientação direta p
   pricePerHourDomicilio: 90,
 };
 
+// Contas de demonstração (mãe e admin) só nascem quando pedidas de propósito.
+// Uma conta ADMIN com senha previsível dá acesso ao painel que aprova
+// professoras, lê todas as reservas e vê endereço de família — não é coisa que
+// possa aparecer num banco de produção por descuido de um comando.
+const CREATE_DEMO_ACCOUNTS = process.env.SEED_DEMO_ACCOUNTS === "true";
+
 async function main() {
-  const passwordHash = await bcrypt.hash("senha123", 10);
+  // Sem senha fixa no repositório: ou vem do ambiente, ou é sorteada e
+  // impressa uma única vez aqui. Assim não existe credencial que qualquer
+  // pessoa com acesso ao código já saiba de antemão.
+  const seedPassword =
+    process.env.SEED_PASSWORD ?? randomBytes(12).toString("base64url");
+  const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   await prisma.user.deleteMany({
     where: { email: { in: REMOVED_TEACHER_EMAILS } },
@@ -71,38 +83,54 @@ async function main() {
     });
   }
 
-  const maeEmail = "mae.exemplo@florescerkids.com.br";
-  const existingMae = await prisma.user.findUnique({ where: { email: maeEmail } });
-  if (!existingMae) {
-    await prisma.user.create({
-      data: {
-        name: "Mãe Exemplo",
-        email: maeEmail,
-        phone: "11955554444",
-        password: passwordHash,
-        role: "MAE",
-      },
+  if (CREATE_DEMO_ACCOUNTS) {
+    const maeEmail = "mae.exemplo@florescerkids.com.br";
+    const existingMae = await prisma.user.findUnique({ where: { email: maeEmail } });
+    if (!existingMae) {
+      await prisma.user.create({
+        data: {
+          name: "Mãe Exemplo",
+          email: maeEmail,
+          phone: "11955554444",
+          password: passwordHash,
+          role: "MAE",
+        },
+      });
+    }
+
+    const adminEmail = "admin@florescerkids.com.br";
+    const existingAdmin = await prisma.user.findUnique({
+      where: { email: adminEmail },
     });
+    if (!existingAdmin) {
+      await prisma.user.create({
+        data: {
+          name: "Administração",
+          email: adminEmail,
+          phone: "11900000000",
+          password: passwordHash,
+          role: "ADMIN",
+        },
+      });
+    }
   }
 
-  const adminEmail = "admin@florescerkids.com.br";
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (!existingAdmin) {
-    await prisma.user.create({
-      data: {
-        name: "Administração",
-        email: adminEmail,
-        phone: "11900000000",
-        password: passwordHash,
-        role: "ADMIN",
-      },
-    });
+  console.log("Seed concluído.");
+  console.log(`  Professora: ${GILDA.email}`);
+  if (CREATE_DEMO_ACCOUNTS) {
+    console.log("  Mãe (demo): mae.exemplo@florescerkids.com.br");
+    console.log("  Admin (demo): admin@florescerkids.com.br");
+  } else {
+    console.log(
+      "  Contas de demonstração não criadas. Para criá-las em um banco de"
+    );
+    console.log("  desenvolvimento, rode com SEED_DEMO_ACCOUNTS=true.");
   }
-
-  console.log("Seed concluído. Logins de teste (senha: senha123):");
-  console.log("  Mãe: mae.exemplo@florescerkids.com.br");
-  console.log("  Professora: gilda@florescerkids.com.br");
-  console.log("  Admin: admin@florescerkids.com.br");
+  if (!process.env.SEED_PASSWORD) {
+    console.log("");
+    console.log(`  Senha sorteada para as contas criadas agora: ${seedPassword}`);
+    console.log("  Anote: ela não é gravada em lugar nenhum e não se repete.");
+  }
 }
 
 main()

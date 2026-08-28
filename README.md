@@ -53,11 +53,13 @@ Você precisa de um banco Postgres (o mais simples é criar um projeto grátis n
 npm install
 cp .env.example .env   # preencha DATABASE_URL e as demais variáveis (veja a tabela abaixo)
 npx prisma migrate dev --name init   # cria as tabelas no banco
-npm run db:seed                       # cria dados de exemplo (professora, mãe, admin)
+SEED_DEMO_ACCOUNTS=true npm run db:seed   # cria a professora + contas de demonstração
 npm run dev
 ```
 
-Acesse http://localhost:3000. As credenciais das contas de teste criadas pelo seed ficam definidas em `prisma/seed.ts` — o próprio script imprime os e-mails no terminal ao rodar.
+Acesse http://localhost:3000. O seed imprime no terminal os e-mails criados e **uma senha sorteada na hora** — anote, porque ela não é gravada em lugar nenhum e muda a cada execução. Para escolher a senha em vez de sortear, use `SEED_PASSWORD=...`.
+
+As contas de demonstração (mãe e admin) só são criadas com `SEED_DEMO_ACCOUNTS=true`, e existem só para desenvolvimento: uma conta ADMIN dá acesso ao painel que aprova professoras e lê todas as reservas, então ela não deve existir num banco de produção. Sem essa variável, o seed cria apenas o perfil da professora.
 
 ## Variáveis de ambiente (`.env`)
 
