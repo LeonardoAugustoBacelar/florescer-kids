@@ -23,6 +23,16 @@ enum BookingStatus {
   CONCLUIDA
 }
 
+// Mensagens automáticas de relacionamento (não transacionais). Cada tipo é um
+// gatilho diferente, disparado pelo cron de engajamento.
+enum MessageKind {
+  CADASTRO_SEM_AGENDAMENTO
+  RESERVA_PENDENTE_PROFESSORA
+  PEDIDO_AVALIACAO
+  CONVITE_INDICACAO
+  REENGAJAMENTO_30_DIAS
+}
+
 enum BookingModality {
   ONLINE
   DOMICILIO_CASA_ALUNO
@@ -37,11 +47,16 @@ model User {
   phone         String?
   role          Role     @default(MAE)
   createdAt     DateTime @default(now())
+  // Descadastro das mensagens de relacionamento. Não afeta e-mail
+  // transacional (redefinição de senha, aviso de aula) — esse é parte do
+  // serviço contratado, não comunicação opcional.
+  unsubscribedAt DateTime?
 
   teacherProfile TeacherProfile?
   bookingsAsMae  Booking[]        @relation("BookingsAsMae")
   resetTokens    PasswordResetToken[]
   reviews        Review[]         @relation("ReviewsAsMae")
+  messageLogs    MessageLog[]
 }
 
 model PasswordResetToken {
@@ -158,4 +173,19 @@ model Review {
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
+}
+
+// Registro do que já foi enviado, para nunca repetir a mesma mensagem para a
+// mesma pessoa. A garantia real está no índice único de `dedupeKey`: se o cron
+// rodar duas vezes (nova tentativa, deploy no meio da execução), a segunda
+// gravação falha e o envio é pulado, em vez de duplicar na caixa de entrada.
+model MessageLog {
+  id        String      @id @default(cuid())
+  kind      MessageKind
+  dedupeKey String      @unique
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentAt    DateTime    @default(now())
+
+  @@index([kind, sentAt])
 }
