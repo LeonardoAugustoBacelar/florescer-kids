@@ -252,10 +252,14 @@ model Prospect {
 
   notes       String?
   contactedAt DateTime?
+  // Segundo toque, mandado dias depois quando o primeiro nao teve resposta.
+  // Em prospeccao fria boa parte do retorno vem daqui, nao do primeiro e-mail.
+  followUpAt  DateTime?
   respondedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([status, distanceKm])
+  @@index([status, contactedAt])
   @@index([kind])
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { sendProspeccaoEmail } from "@/lib/email";
+import { enviarPrimeiroContato } from "@/lib/prospectSend";
 import { buscarEmailNoSite } from "@/lib/siteEmail";
 import { CATEGORIAS, buscarCategoria } from "@/lib/overpass";
 import {
@@ -67,56 +67,32 @@ export async function saveProspectNotesAction(prospectId: string, notes: string)
   revalidatePath("/admin/prospeccao");
 }
 
-/**
- * Envia o primeiro contato — o único ponto do sistema que dispara para fora.
- *
- * Três travas, todas por um motivo já visto acontecer:
- *
- * 1. Exige status APROVADO. É o portão de leitura humana: nada sai sem alguém
- *    ter aberto o rascunho e clicado em aprovar.
- * 2. Exige `contactedAt` vazio. Duplo clique no botão, ou aba reaberta, não
- *    manda o mesmo e-mail duas vezes — apresentar-se duas vezes para a mesma
- *    escola custa a parceria.
- * 3. Marca `contactedAt` ANTES de enviar. Se o envio estourar no meio, o
- *    registro já está travado: melhor investigar um envio incerto do que
- *    arriscar mandar de novo.
- */
+/** Envia o primeiro contato a partir da tela. As travas moram em prospectSend. */
 export async function sendProspectContactAction(prospectId: string) {
   await requireAdmin();
+  await enviarPrimeiroContato(prospectId);
+  revalidatePath("/admin/prospeccao");
+}
 
-  const prospect = await prisma.prospect.findUnique({
-    where: { id: prospectId },
-  });
+/**
+ * Aprova de uma vez tudo que está aguardando leitura.
+ *
+ * Existe porque aprovar cinquenta fichas uma a uma é o que faz a pessoa
+ * desistir do portão e querer desligá-lo. O texto continua sendo lido — só que
+ * numa passada só, e quem quiser conferir ficha a ficha ainda pode.
+ */
+export async function approveAllProspectsAction(): Promise<{ aprovados: number }> {
+  await requireAdmin();
 
-  if (!prospect) throw new Error("Prospect não encontrado");
-  if (!prospect.email) throw new Error("Sem e-mail — o contato aqui é por telefone");
-  if (prospect.status !== "APROVADO") {
-    throw new Error("Aprove o texto antes de enviar");
-  }
-  if (prospect.contactedAt) throw new Error("Este contato já foi enviado");
-  if (!prospect.draftSubject || !prospect.draftBody) {
-    throw new Error("Rascunho vazio");
-  }
-
-  await prisma.prospect.update({
-    where: { id: prospectId },
-    data: { status: "CONTATADO", contactedAt: new Date() },
-  });
-
-  const professora = await prisma.teacherProfile.findFirst({
-    where: { approved: true },
-    include: { user: { select: { email: true } } },
-    orderBy: { createdAt: "asc" },
-  });
-
-  await sendProspeccaoEmail(prospect.email, {
-    subject: prospect.draftSubject,
-    body: prospect.draftBody,
-    replyTo: professora?.notificationEmail ?? professora?.user.email,
+  const { count } = await prisma.prospect.updateMany({
+    where: { status: "ENCONTRADO", email: { not: null } },
+    data: { status: "APROVADO" },
   });
 
   revalidatePath("/admin/prospeccao");
+  return { aprovados: count };
 }
+
 
 /**
  * Roda UMA categoria da busca e grava o que achou.

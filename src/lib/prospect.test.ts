@@ -7,6 +7,11 @@ import {
   escolherEmail,
   extrairEmails,
   redigirPrimeiroContato,
+  redigirFollowUp,
+  precisaFollowUp,
+  mensagemWhatsAppProspect,
+  DIAS_PARA_FOLLOW_UP,
+  LIMITE_DIARIO_ENVIO,
   valeContatar,
   ehRedePublica,
   type PlaceBruto,
@@ -210,5 +215,98 @@ describe("rede pública", () => {
     // mais rápido, pública dá alcance. Errar aqui bagunça a priorização.
     expect(ehRedePublica("Colégio Talento")).toBe(false);
     expect(ehRedePublica("Escola Infantil Girassol")).toBe(false);
+  });
+});
+
+describe("disparo automático", () => {
+  const AGORA = new Date("2026-09-08T12:00:00.000Z");
+  const diasAtras = (d: number) =>
+    new Date(AGORA.getTime() - d * 24 * 60 * 60 * 1000);
+
+  function contatado(over = {}) {
+    return {
+      status: "CONTATADO",
+      email: "contato@escola.com.br",
+      contactedAt: diasAtras(DIAS_PARA_FOLLOW_UP + 1),
+      followUpAt: null,
+      respondedAt: null,
+      ...over,
+    };
+  }
+
+  it("insiste uma vez depois da janela", () => {
+    expect(precisaFollowUp(contatado(), AGORA)).toBe(true);
+  });
+
+  it("não insiste antes da janela", () => {
+    expect(precisaFollowUp(contatado({ contactedAt: diasAtras(2) }), AGORA)).toBe(
+      false
+    );
+  });
+
+  it("nunca insiste duas vezes", () => {
+    // O segundo e-mail é onde mora a resposta; o terceiro é onde mora a
+    // reclamação de spam.
+    expect(
+      precisaFollowUp(contatado({ followUpAt: diasAtras(1) }), AGORA)
+    ).toBe(false);
+  });
+
+  it("não insiste com quem já respondeu", () => {
+    expect(
+      precisaFollowUp(contatado({ respondedAt: diasAtras(1) }), AGORA)
+    ).toBe(false);
+  });
+
+  it("não insiste com quem nem foi contatado", () => {
+    expect(
+      precisaFollowUp(contatado({ status: "APROVADO", contactedAt: null }), AGORA)
+    ).toBe(false);
+  });
+
+  it("o teto diário protege a conta de e-mail, então tem que ser modesto", () => {
+    expect(LIMITE_DIARIO_ENVIO).toBeGreaterThan(0);
+    expect(LIMITE_DIARIO_ENVIO).toBeLessThanOrEqual(50);
+  });
+});
+
+describe("textos do disparo", () => {
+  const dados = {
+    professora: { nome: "Gilda", whatsapp: "(11) 97040-6208" },
+    siteUrl: "https://florescerkids.com.br",
+  };
+
+  it("o primeiro contato explica o que é o Florescer Kids", () => {
+    const { body } = redigirPrimeiroContato({
+      ...dados,
+      prospect: { name: "Colégio Talento", kind: "ESCOLA_INFANTIL", distanceKm: 3 },
+    });
+    expect(body).toContain("Florescer Kids");
+    expect(body).toContain("Colégio Talento");
+  });
+
+  it("o follow-up é curto e oferece a saída", () => {
+    const { subject, body } = redigirFollowUp({
+      ...dados,
+      prospect: { name: "Colégio Talento", kind: "ESCOLA_INFANTIL", distanceKm: 3 },
+    });
+    expect(subject).toContain("Colégio Talento");
+    expect(body).toContain("não insisto mais");
+    expect(body).toContain("ignorar");
+    // Mais curto que o primeiro contato, senão vira repetição.
+    const primeiro = redigirPrimeiroContato({
+      ...dados,
+      prospect: { name: "Colégio Talento", kind: "ESCOLA_INFANTIL", distanceKm: 3 },
+    });
+    expect(body.length).toBeLessThan(primeiro.body.length);
+  });
+
+  it("a mensagem de WhatsApp é bem mais curta que o e-mail", () => {
+    const zap = mensagemWhatsAppProspect({
+      ...dados,
+      prospect: { name: "Colégio Talento", kind: "ESCOLA_INFANTIL", distanceKm: 3 },
+    });
+    expect(zap).toContain("Colégio Talento");
+    expect(zap.length).toBeLessThan(500);
   });
 });

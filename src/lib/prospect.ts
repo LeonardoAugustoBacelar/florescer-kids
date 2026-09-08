@@ -235,6 +235,11 @@ export function redigirPrimeiroContato(dados: DadosContato): {
     "",
     `Meu nome é ${professora.nome}. ${ABERTURA_POR_TIPO[prospect.kind]}`,
     "",
+    // O que é o Florescer Kids, em duas linhas. Vai depois da abertura de
+    // propósito: quem recebe precisa primeiro reconhecer o problema como algo
+    // que vê no dia a dia, e só então se interessar por quem resolve.
+    "O Florescer Kids é o acompanhamento que faço com essas crianças — aulas individuais, online ou na casa da família, focadas em rotina de estudo, limites e no que está travando a criança na escola. Trabalho junto com a mãe, porque quase nada disso se sustenta se mudar só na hora da aula.",
+    "",
     OFERTA_POR_TIPO[prospect.kind],
     "",
     perto
@@ -263,4 +268,99 @@ export function ehRedePublica(name: string): boolean {
   return /\b(estadual|municipal|emei|emef|ceu|cei|e\.?e\.?|e\.?m\.?|prefeitura)\b/i.test(
     name
   );
+}
+
+/**
+ * Quantos primeiros contatos saem por dia.
+ *
+ * O teto não é de capacidade: é de reputação. Estes e-mails saem da mesma
+ * conta que manda confirmação de aula e redefinição de senha, e um pico
+ * repentino de mensagens para desconhecidos é exatamente o padrão que os
+ * filtros pegam. Quinze por dia mantém o envio bem longe de qualquer limite e
+ * ainda esvazia uma fila de duzentos em duas semanas.
+ */
+export const LIMITE_DIARIO_ENVIO = 15;
+
+/** Dias de silêncio antes do segundo toque. */
+export const DIAS_PARA_FOLLOW_UP = 7;
+
+/**
+ * Está na hora de insistir uma vez?
+ *
+ * Uma vez só, e é deliberado. O segundo e-mail é onde mora boa parte da
+ * resposta em prospecção fria; o terceiro é onde mora a reclamação de spam.
+ */
+export function precisaFollowUp(
+  prospect: {
+    status: string;
+    contactedAt: Date | null;
+    followUpAt: Date | null;
+    respondedAt: Date | null;
+    email: string | null;
+  },
+  agora: Date
+): boolean {
+  if (prospect.status !== "CONTATADO") return false;
+  if (!prospect.email || !prospect.contactedAt) return false;
+  if (prospect.followUpAt || prospect.respondedAt) return false;
+  const dias =
+    (agora.getTime() - prospect.contactedAt.getTime()) / (24 * 60 * 60 * 1000);
+  return dias >= DIAS_PARA_FOLLOW_UP;
+}
+
+/**
+ * O segundo toque.
+ *
+ * Curto porque o primeiro já explicou tudo: repetir o argumento inteiro faz a
+ * mensagem parecer disparo automático, que é justamente o que ela não pode
+ * parecer. Aqui só se reapresenta e dá uma saída fácil — oferecer o "não" de
+ * bandeja é o que evita que o silêncio vire marcação de spam.
+ */
+export function redigirFollowUp(dados: DadosContato): {
+  subject: string;
+  body: string;
+} {
+  const { prospect, professora, siteUrl } = dados;
+
+  return {
+    subject: `Re: ${prospect.name} — só retomando`,
+    body: [
+      `Olá de novo, equipe do ${prospect.name},`,
+      "",
+      `Escrevi há alguns dias oferecendo uma conversa sobre apoio pedagógico e comportamento infantil, e imagino que a semana de vocês seja corrida — só estou retomando uma vez, e não insisto mais depois desta.`,
+      "",
+      `Se fizer sentido conversar, é só responder aqui ou chamar no WhatsApp ${professora.whatsapp}. Se não for o momento, pode ignorar tranquilamente que eu entendo.`,
+      "",
+      `De qualquer forma, o site fica aqui caso alguma família precise: ${siteUrl}`,
+      "",
+      "Obrigada,",
+      professora.nome,
+    ].join("\n"),
+  };
+}
+
+/**
+ * Mensagem curta para abrir no WhatsApp.
+ *
+ * Bem mais curta que o e-mail, e de propósito: no WhatsApp o texto chega numa
+ * bolha que a pessoa lê no meio do expediente. Parágrafo longo ali não é lido
+ * — é arquivado.
+ *
+ * Este caminho é manual por natureza: monta o link, a professora abre e envia.
+ * Disparo automático em WhatsApp precisaria da API oficial da Meta, com
+ * template aprovado por eles; automatizar por fora derruba o número que hoje
+ * recebe os agendamentos.
+ */
+export function mensagemWhatsAppProspect(dados: DadosContato): string {
+  const { prospect, professora, siteUrl } = dados;
+  const escola =
+    prospect.kind === "ESCOLA_INFANTIL" || prospect.kind === "CRECHE";
+
+  return [
+    `Olá! Aqui é a ${professora.nome}, do Florescer Kids.`,
+    escola
+      ? `Trabalho com apoio pedagógico e comportamento infantil aqui na região e queria propor uma roda de conversa gratuita com os pais do ${prospect.name} — 40 minutos sobre limites e rotina de estudo, sem venda no meio.`
+      : `Trabalho com apoio pedagógico e comportamento infantil aqui na região e queria conversar sobre encaminhamento de famílias entre nós.`,
+    `Faz sentido pra vocês? O site é ${siteUrl}`,
+  ].join("\n\n");
 }

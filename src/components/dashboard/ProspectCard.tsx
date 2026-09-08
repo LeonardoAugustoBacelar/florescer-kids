@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ehRedePublica } from "@/lib/prospect";
+import { buildWhatsAppLink } from "@/lib/whatsapp";
 import {
   saveProspectDraftAction,
   saveProspectNotesAction,
@@ -11,6 +12,7 @@ import {
 
 type Prospect = {
   id: string;
+  whatsAppMessage?: string;
   name: string;
   kind: string;
   status: string;
@@ -133,12 +135,28 @@ export default function ProspectCard({ prospect }: { prospect: Prospect }) {
         </span>
       </div>
 
-      <button
-        onClick={() => setAberto((v) => !v)}
-        className="mt-3 text-xs font-semibold text-accent-600 hover:underline"
-      >
-        {aberto ? "Fechar" : "Ler e editar a mensagem"}
-      </button>
+      <div className="mt-3 flex flex-wrap items-center gap-4">
+        <button
+          onClick={() => setAberto((v) => !v)}
+          className="text-xs font-semibold text-accent-600 hover:underline"
+        >
+          {aberto ? "Fechar" : "Ler e editar a mensagem"}
+        </button>
+
+        {prospect.phone && prospect.whatsAppMessage && (
+          <a
+            href={buildWhatsAppLink(
+              `55${prospect.phone.replace(/\D/g, "").replace(/^55/, "")}`,
+              prospect.whatsAppMessage
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-semibold text-green-700 hover:underline"
+          >
+            Abrir no WhatsApp
+          </a>
+        )}
+      </div>
 
       {aberto && (
         <div className="mt-4 space-y-3 border-t border-primary-100 pt-4">

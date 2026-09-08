@@ -5,6 +5,12 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import ProspectCard from "@/components/dashboard/ProspectCard";
 import ProspectSearchPanel from "@/components/dashboard/ProspectSearchPanel";
+import ProspectBulkApprove from "@/components/dashboard/ProspectBulkApprove";
+import {
+  LIMITE_DIARIO_ENVIO,
+  DIAS_PARA_FOLLOW_UP,
+  mensagemWhatsAppProspect,
+} from "@/lib/prospect";
 
 export const metadata: Metadata = {
   title: "Prospecção",
@@ -50,6 +56,12 @@ export default async function ProspeccaoPage() {
     orderBy: [{ distanceKm: "asc" }],
   });
 
+  const professora = await prisma.teacherProfile.findFirst({
+    where: { approved: true },
+    include: { user: true },
+    orderBy: { createdAt: "asc" },
+  });
+
   const pendentesDeEmail = await prisma.prospect.count({
     where: {
       email: null,
@@ -61,6 +73,27 @@ export default async function ProspeccaoPage() {
 
   const porStatus = (status: string) =>
     prospects.filter((p) => p.status === status);
+
+  const aguardandoEnvio = prospects.filter(
+    (p) => p.status === "APROVADO" && p.email && !p.contactedAt
+  ).length;
+  const aprovaveis = prospects.filter(
+    (p) => p.status === "ENCONTRADO" && p.email
+  ).length;
+
+  // A mensagem de WhatsApp é montada aqui, no servidor, porque depende do nome
+  // e do número da professora — dado que não precisa viajar pro cliente.
+  const whatsAppDe = (p: (typeof prospects)[number]) =>
+    professora
+      ? mensagemWhatsAppProspect({
+          prospect: { name: p.name, kind: p.kind, distanceKm: p.distanceKm },
+          professora: {
+            nome: professora.user.name.split(" ")[0],
+            whatsapp: professora.whatsapp,
+          },
+          siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://florescerkids.com.br",
+        })
+      : undefined;
 
   const total = prospects.length;
   const contatados = prospects.filter((p) => p.contactedAt).length;
@@ -87,6 +120,37 @@ export default async function ProspeccaoPage() {
 
       <div className="mt-6">
         <ProspectSearchPanel pendentesDeEmail={pendentesDeEmail} />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-primary-100 bg-white p-5">
+        <h2 className="font-bold text-primary-700">Disparo automático</h2>
+        <p className="mt-1 text-sm text-primary-700/70">
+          Todo dia útil às 11h, o sistema envia até{" "}
+          <strong className="text-primary-700">
+            {LIMITE_DIARIO_ENVIO} primeiros contatos
+          </strong>{" "}
+          já aprovados, dos mais próximos para os mais distantes. Quem não
+          responder em {DIAS_PARA_FOLLOW_UP} dias recebe um segundo e último
+          e-mail, automaticamente.
+        </p>
+        <p className="mt-2 text-sm text-primary-700/70">
+          {aguardandoEnvio > 0 ? (
+            <>
+              <strong className="text-primary-700">{aguardandoEnvio}</strong> na
+              fila de envio — cerca de{" "}
+              {Math.ceil(aguardandoEnvio / LIMITE_DIARIO_ENVIO)} dia(s) úteis
+              para esvaziar.
+            </>
+          ) : (
+            "Nada na fila de envio. Aprove mensagens abaixo para o disparo começar."
+          )}
+        </p>
+        <p className="mt-3 text-xs text-primary-700/60">
+          O ritmo é de reputação, não de capacidade: estes e-mails saem da mesma
+          conta que manda confirmação de aula e redefinição de senha, e um pico
+          de mensagens para desconhecidos é o que derruba a entrega das duas.
+        </p>
+        <ProspectBulkApprove pendentes={aprovaveis} />
       </div>
 
       {total === 0 ? (
@@ -140,7 +204,10 @@ export default async function ProspeccaoPage() {
                 )}
                 <div className="mt-4 space-y-3">
                   {lista.map((p) => (
-                    <ProspectCard key={p.id} prospect={p} />
+                    <ProspectCard
+                      key={p.id}
+                      prospect={{ ...p, whatsAppMessage: whatsAppDe(p) }}
+                    />
                   ))}
                 </div>
               </section>
