@@ -189,3 +189,73 @@ model MessageLog {
 
   @@index([kind, sentAt])
 }
+
+// Prospecção de parceiros institucionais — escolas, creches e consultórios que
+// atendem o mesmo público e podem encaminhar famílias.
+//
+// Só entram aqui organizações com contato PUBLICADO para receber contato
+// comercial (o que o Google Places devolve de uma ficha de empresa). Mãe é
+// pessoa física: dado dela não é prospectado, chega pelo site ou por indicação.
+enum ProspectKind {
+  ESCOLA_INFANTIL
+  CRECHE
+  CLINICA_PEDIATRICA
+  PSICOLOGIA
+  FONOAUDIOLOGIA
+  OUTRO
+}
+
+// O fluxo é deliberadamente travado em APROVADO: o robô encontra e redige, mas
+// nada sai daqui sem alguém ter lido. Cinquenta e-mails revisados valem mais
+// que mil disparados, e o domínio de envio é o mesmo dos e-mails transacionais
+// — queimá-lo derrubaria confirmação de aula e reset de senha junto.
+enum ProspectStatus {
+  ENCONTRADO
+  APROVADO
+  CONTATADO
+  RESPONDEU
+  SEM_RESPOSTA
+  DESCARTADO
+}
+
+model Prospect {
+  id      String       @id @default(cuid())
+  // Identificador da ficha no Google Places. É a chave natural da busca: com
+  // ela, rodar o script de novo atualiza o registro existente em vez de criar
+  // uma segunda linha da mesma escola.
+  placeId String       @unique
+  kind    ProspectKind
+  status  ProspectStatus @default(ENCONTRADO)
+
+  name    String
+  address String
+  // Distância até a base (Cotia), em km. Guardada no momento da busca para
+  // ordenar a fila sem recalcular — parceria perto é a que dá aula presencial.
+  distanceKm Float
+
+  phone   String?
+  website String?
+  // O Places não devolve e-mail; este vem do site da própria instituição,
+  // quando ela publica um. Sem e-mail, o contato é por telefone, na mão.
+  email   String?
+  // Quando o site foi visitado à procura de e-mail. Marca a tentativa, não o
+  // sucesso: sem isso, toda rodada de enriquecimento tentaria de novo os
+  // mesmos sites que não publicam endereço nenhum, e a fila nunca terminaria.
+  emailCheckedAt DateTime?
+
+  rating      Float?
+  ratingCount Int?
+
+  // Rascunho do primeiro contato, gerado na busca e editável antes do envio.
+  draftSubject String?
+  draftBody    String?
+
+  notes       String?
+  contactedAt DateTime?
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, distanceKm])
+  @@index([kind])
+}

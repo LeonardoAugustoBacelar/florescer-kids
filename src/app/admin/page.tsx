@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -37,6 +38,13 @@ export default async function AdminPage() {
       <h1 className="font-serif-display text-3xl font-semibold text-primary-700">
         Painel de administração
       </h1>
+
+      <Link
+        href="/admin/prospeccao"
+        className="mt-3 inline-block rounded-md border border-primary-100 bg-white px-4 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50"
+      >
+        Prospecção de parceiros →
+      </Link>
 
       <section className="mt-8">
         <h2 className="text-xl font-bold text-primary-700">Professora</h2>

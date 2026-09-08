@@ -284,3 +284,32 @@ export async function sendReservaPendenteProfessoraEmail(
     `,
   });
 }
+
+/**
+ * Primeiro contato com um parceiro institucional (escola, creche, consultório).
+ *
+ * Sem o layout de relacionamento de propósito. E-mail de apresentação que
+ * chega com banner, botão e rodapé de newsletter é lido como disparo em massa
+ * e some na aba de promoções — que é exatamente onde ele não pode cair. Aqui
+ * o corpo é o texto que a Gilda revisou, em parágrafos simples, do jeito que
+ * uma pessoa escreveria. O `replyTo` é o e-mail dela: a resposta tem que
+ * chegar na caixa de quem vai responder, não na do sistema.
+ */
+export async function sendProspeccaoEmail(
+  to: string,
+  data: { subject: string; body: string; replyTo?: string }
+) {
+  const paragrafos = data.body
+    .split("\n\n")
+    .map((p) => `<p style="margin:0 0 14px;">${p.replace(/\n/g, "<br>")}</p>`)
+    .join("");
+
+  await transporter.sendMail({
+    from: `Florescer Kids <${GMAIL_USER}>`,
+    to,
+    replyTo: data.replyTo || undefined,
+    subject: data.subject,
+    text: data.body,
+    html: `<div style="font-family: -apple-system, Segoe UI, sans-serif; font-size: 15px; line-height: 1.55; color: #27272a; max-width: 540px;">${paragrafos}</div>`,
+  });
+}
